@@ -35,9 +35,9 @@ func (o Opts) String() string {
 }
 
 var (
-	Debug   *log.Logger
-	Info    *log.Logger
-	Error   *log.Logger
+	Debug   *log.Logger = log.New(os.Stdout, "[DEBUG] ", defaultLogMask)
+	Info    *log.Logger = log.New(os.Stdout, "[INFO] ", defaultLogMask)
+	Error   *log.Logger = log.New(os.Stdout, "[ERROR] ", defaultLogMask)
 	LogOpts Opts
 )
 
