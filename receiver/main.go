@@ -1,7 +1,6 @@
 package main
 
 import (
-	"log"
 	"os"
 	"os/signal"
 	"syscall"
@@ -10,6 +9,7 @@ import (
 	"github.com/mrWinston/sysloco/receiver/settings"
 	"github.com/mrWinston/sysloco/receiver/storage"
 	"github.com/mrWinston/sysloco/receiver/syslog"
+	"github.com/mrWinston/sysloco/receiver/syslogrest"
 )
 
 var shutdown = make(chan bool, 1)
@@ -17,11 +17,9 @@ var osSig = make(chan os.Signal, 1)
 
 func handleErr(err error) {
 	if err != nil {
-		if logging.Error != nil {
-			logging.Error.Fatal(err)
-		} else {
-			log.Fatal(err)
-		}
+		logging.Error.Printf("%s", err)
+		logging.Error.Printf("Shutting Down...", err)
+		shutdown <- true
 	}
 }
 
@@ -63,6 +61,7 @@ func main() {
 		logStore, err = storage.NewMemStore(options.DbLocation)
 		handleErr(err)
 	}
+	defer logStore.Release()
 
 	// Setup Syslog Server Listener
 	syslogOptions := syslog.DefaultOpts()
@@ -72,11 +71,14 @@ func main() {
 	handleErr(err)
 	syslogServer.DB = logStore
 	go syslogServer.Start()
+	defer syslogServer.Stop()
+
+	syslogRestServer, err := syslogrest.NewServer(options.HttpPort, options.HttpAddress, logStore)
+	handleErr(err)
+	err = syslogRestServer.Start()
+	defer syslogRestServer.Stop()
 
 	// Wait for Shutdown Signal
 	<-shutdown
 	logging.Info.Println("Shutting Down...")
-	syslogServer.Stop()
-	logStore.Release()
-
 }

@@ -131,9 +131,11 @@ func (memStore *MemStore) Release() error {
 // Filter Returns all Elements that match the provided regex in reverse order ( from
 // newest to oldest )
 func (memStore *MemStore) Filter(filter string) ([]*parsing.Message, error) {
+	logging.Debug.Printf("Filtering for %s, ...", filter)
 	var ret []*parsing.Message
 	matchExp, err := regexp.Compile(filter)
 	if err != nil {
+		logging.Info.Printf("Received an Invalid Filter: \"%s\"", filter)
 		return nil, err
 	}
 	storeSize := len(memStore.store)
@@ -143,5 +145,6 @@ func (memStore *MemStore) Filter(filter string) ([]*parsing.Message, error) {
 			ret = append(ret, curMsg)
 		}
 	}
+	logging.Debug.Printf("Found %d Results", len(ret))
 	return ret, nil
 }
