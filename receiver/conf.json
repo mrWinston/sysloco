@@ -1,0 +1,7 @@
+{
+  "LogLevel": 1,
+  "DebugPath": "./debug.log",
+  "HttpPort": 80,
+  "SyslogPort": 10001,
+  "DbLocation": "/tmp/dblg"
+}
