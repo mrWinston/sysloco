@@ -1,0 +1,3 @@
+# The Syslog Event Server
+
+Listens for syslog events and stores them "safely"...
