@@ -36,10 +36,10 @@ func (syslogRestServer *SyslogRestServer) Start() error {
 	}
 
 	logging.Debug.Printf("Starting server with Addr: %s, Port: %d", syslogRestServer.address, syslogRestServer.port)
-	filterHander := handlers.NewFilterHandler(syslogRestServer.store)
+	rootHandler := handlers.NewRootHandler(syslogRestServer.store)
 	httpServer := &http.Server{
 		Addr:         fmt.Sprintf("%s:%d", syslogRestServer.address, syslogRestServer.port),
-		Handler:      filterHander,
+		Handler:      rootHandler,
 		ReadTimeout:  time.Second * 30,
 		WriteTimeout: time.Second * 30,
 		ErrorLog:     logging.Error,
