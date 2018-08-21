@@ -36,9 +36,7 @@ func (syslogRestServer *SyslogRestServer) Start() error {
 	}
 
 	logging.Debug.Printf("Starting server with Addr: %s, Port: %d", syslogRestServer.address, syslogRestServer.port)
-	filterHander := &handlers.FilterHandler{
-		Store: syslogRestServer.store,
-	}
+	filterHander := handlers.NewFilterHandler(syslogRestServer.store)
 	httpServer := &http.Server{
 		Addr:         fmt.Sprintf("%s:%d", syslogRestServer.address, syslogRestServer.port),
 		Handler:      filterHander,

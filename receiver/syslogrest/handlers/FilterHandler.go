@@ -14,7 +14,13 @@ import (
 var regexPostKey = "filter"
 
 type FilterHandler struct {
-	Store storage.LogStore
+	store storage.LogStore
+}
+
+func NewFilterHandler(storage storage.LogStore) *FilterHandler {
+	return &FilterHandler{
+		store: storage,
+	}
 }
 
 func (filterHandler *FilterHandler) ServeHTTP(res http.ResponseWriter, req *http.Request) {
@@ -25,7 +31,7 @@ func (filterHandler *FilterHandler) ServeHTTP(res http.ResponseWriter, req *http
 		return
 	}
 
-	results, err := filterHandler.Store.Filter(regexString)
+	results, err := filterHandler.store.Filter(regexString)
 	if err != nil {
 		http.Error(res, fmt.Sprintf("Regex Invalid: %s", err.Error()), http.StatusBadRequest)
 	}
