@@ -22,7 +22,7 @@ func NewRootHandler(storage storage.LogStore) *RootHandler {
 }
 
 func (rootHandler *RootHandler) ServeHTTP(res http.ResponseWriter, req *http.Request) {
-	logging.Debug.Printf("Receiving Request for %s, Path is: %s", req.URL, req.URL.Path)
+	logging.Error.Printf("Receiving Request for %s, Path is: %s", req.URL, req.URL.Path)
 	path := strings.Split(req.URL.Path, "/")[1:]
 	switch path[0] {
 	case "filter":

@@ -19,5 +19,7 @@ type LogStore interface {
 
 	// Run this Filter through the DB. Error should not be set, if the filter
 	// didn't return any results. Instead, an Empty slice shall be returned.
-	Filter(regex string) ([]*parsing.Message, error)
+	// it filters the app and Msg field of the logmsg and returns at most num
+	// results
+	Filter(appRegex string, msgRegex string, num int) ([]*parsing.Message, error)
 }

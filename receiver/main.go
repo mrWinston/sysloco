@@ -52,11 +52,12 @@ func main() {
 	var logStore storage.LogStore
 	if options.DbEngine == "badger" {
 		// Settings up Badger Storage
-		storageOpts := storage.BadgerDefaultOptions()
-		storageOpts.Dir = options.DbLocation
-		storageOpts.ValueDir = options.DbLocation
-		logStore, err = storage.NewBadgerStore(storageOpts)
-		handleErr(err)
+		logging.Error.Fatal("Badger Store not implemented")
+		//storageOpts := storage.BadgerDefaultOptions()
+		//storageOpts.Dir = options.DbLocation
+		//storageOpts.ValueDir = options.DbLocation
+		//logStore, err = storage.NewBadgerStore(storageOpts)
+		//handleErr(err)
 	} else {
 		logStore, err = storage.NewMemStore(options.DbLocation)
 		handleErr(err)

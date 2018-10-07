@@ -83,6 +83,7 @@ func (memStore *MemStore) listenForMsg() {
 // asyncronously, so calling GetLatest right after adding will likely not
 // return the just added msg
 func (memStore *MemStore) Store(msg parsing.Message) error {
+	logging.Debug.Printf("Receiving Msg")
 	memStore.msgChan <- &msg
 	return nil
 }
@@ -130,18 +131,27 @@ func (memStore *MemStore) Release() error {
 
 // Filter Returns all Elements that match the provided regex in reverse order ( from
 // newest to oldest )
-func (memStore *MemStore) Filter(filter string) ([]*parsing.Message, error) {
-	logging.Debug.Printf("Filtering for %s, ...", filter)
+func (memStore *MemStore) Filter(appFilter string, msgFilter string, num int) ([]*parsing.Message, error) {
+	logging.Debug.Printf("Filtering for %s and %s with %s results ...", appFilter, msgFilter, num)
 	var ret []*parsing.Message
-	matchExp, err := regexp.Compile(filter)
+
+	appExp, err := regexp.Compile(appFilter)
 	if err != nil {
-		logging.Info.Printf("Received an Invalid Filter: \"%s\"", filter)
+		logging.Info.Printf("Received an Invalid AppFilter: \"%s\"", appFilter)
 		return nil, err
 	}
+	msgExp, err := regexp.Compile(msgFilter)
+	if err != nil {
+		logging.Info.Printf("Received an Invalid MsgFilter: \"%s\"", msgFilter)
+		return nil, err
+	}
+
 	storeSize := len(memStore.store)
-	for i := storeSize - 1; i >= 0; i-- {
+	for i := storeSize - 1; i >= 0 && len(ret) <= num; i-- {
 		curMsg := memStore.store[i]
-		if matchExp.MatchString(curMsg.Msg) {
+		if !msgExp.MatchString(curMsg.Msg) {
+			continue
+		} else if appExp.MatchString(curMsg.Appname) {
 			ret = append(ret, curMsg)
 		}
 	}

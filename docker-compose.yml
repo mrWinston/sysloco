@@ -1,0 +1,41 @@
+version: '3.4'
+
+services:
+  reverse-proxy:
+    image: traefik # The official Traefik docker image
+    command: --api --logLevel=INFO --docker
+    ports:
+      - "80:80"     # The HTTP port
+      - "8080:8080" # The Web UI (enabled by --api)
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock # So that Traefik can listen to the Docker events
+  receiver:
+    build: ./receiver
+    volumes:
+      - "log_data:/db"
+    command: -db-loc /db/db.txt -v 1
+    ports:
+      - 80
+      - "10001:10001/udp"
+    labels:
+      - "traefik.frontend.rule=PathPrefixStrip:/receiver"
+      - "traefik.port=80"
+
+  ui:
+    build:
+      context: ./ui
+      target: Dev
+    #    environment:
+    #      - NODE_ENV=production
+    volumes:
+      - ./ui/src:/app/src
+      - ./ui/public:/app/public
+      - ./ui/vue.config.js:/app/vue.config.js
+    ports:
+      - 8080
+    labels:
+      - "traefik.frontend.rule=PathPrefixStrip:/ui"
+      - "traefik.frontend.passHostHeader=true"
+
+volumes:
+  log_data:
