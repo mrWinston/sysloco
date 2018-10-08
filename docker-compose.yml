@@ -24,7 +24,7 @@ services:
   ui:
     build:
       context: ./ui
-      target: Dev
+      target: Prod
     #    environment:
     #      - NODE_ENV=production
     volumes:
