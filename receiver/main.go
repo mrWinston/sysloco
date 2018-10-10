@@ -59,10 +59,9 @@ func main() {
 		//logStore, err = storage.NewBadgerStore(storageOpts)
 		//handleErr(err)
 	} else {
-		logStore, err = storage.NewMemStore(options.DbLocation)
+		logStore, err = storage.NewMemStore(options.DbLocation, 0, 0)
 		handleErr(err)
 	}
-	defer logStore.Release()
 
 	// Setup Syslog Server Listener
 	syslogOptions := syslog.DefaultOpts()
@@ -81,5 +80,8 @@ func main() {
 
 	// Wait for Shutdown Signal
 	<-shutdown
+	logStore.Release()
+	syslogRestServer.Stop()
+	syslogServer.Stop()
 	logging.Info.Println("Shutting Down...")
 }

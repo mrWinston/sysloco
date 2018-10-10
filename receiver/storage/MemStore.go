@@ -12,30 +12,44 @@ import (
 	"github.com/mrWinston/sysloco/receiver/parsing"
 )
 
+type WrappingMessageArray struct {
+	size  int
+	index int
+	store []*parsing.msg
+}
+
+func NewWrappingMessageArray(size int) *WrappingMessageArray {
+	if size <= 0 {
+		return &WrappingMessageArray
+
+}
+
 // The MemStore Struct provides Methods for interacting with the Memory Backed
 // Log Storage
 type MemStore struct {
-	storeFile string
-	store     []*parsing.Message
-	msgChan   chan *parsing.Message
-	stop      bool
+	maximumLines   int
+	maximumAgeDays int
+	cleanUpTick    *time.Ticker
+	storeFile      string
+	store          []*parsing.Message
+	msgChan        chan *parsing.Message
+	stop           chan bool
 }
 
 // NewMemStore Returns a new Instance of of the MemStore struct. It either
 // creates a new persistencyFile or loads all log msg from an existing one
-func NewMemStore(persistencyFile string) (*MemStore, error) {
+func NewMemStore(persistencyFile string, maximumLines int, maximumAgeDays int) (*MemStore, error) {
 	// file doens't exist
 	start := time.Now()
-	logging.Debug.Println("Loading MemStore Persistency File ")
 	var file *os.File
 	if _, err := os.Stat(persistencyFile); os.IsNotExist(err) {
-		logging.Debug.Println("Creating new File at: ", persistencyFile)
+		logging.Info.Println("Creating new Store at: ", persistencyFile)
 		file, err = os.Create(persistencyFile)
 		if err != nil {
 			return nil, err
 		}
 	} else {
-		logging.Debug.Println("Loading Existing File from ", persistencyFile)
+		logging.Info.Println("Loading Existing Store File from ", persistencyFile)
 		file, err = os.Open(persistencyFile)
 		if err != nil {
 			return nil, err
@@ -59,23 +73,43 @@ func NewMemStore(persistencyFile string) (*MemStore, error) {
 	if err := scanner.Err(); err != nil {
 		return nil, err
 	}
-
 	var memStore = &MemStore{
-		storeFile: persistencyFile,
-		store:     lines,
-		msgChan:   make(chan *parsing.Message),
-		stop:      false,
+		maximumLines:   maximumLines,
+		maximumAgeDays: maximumAgeDays,
+		cleanUpTick:    time.NewTicker(5 * time.Second),
+		storeFile:      persistencyFile,
+		store:          lines,
+		msgChan:        make(chan *parsing.Message),
+		stop:           make(chan bool),
 	}
 	go memStore.listenForMsg()
+	go memStore.runOldMessageCleaner()
 
 	logging.Debug.Printf("Took me %s to load the file", time.Since(start))
 	return memStore, nil
 }
 
+func (memStore *MemStore) runOldMessageCleaner() {
+	for {
+		select {
+		case <-memStore.stop:
+			logging.Debug.Println("Stopping Cleanup Routine")
+			return
+		case <-memStore.cleanUpTick.C:
+			logging.Debug.Println("Cleaning...")
+		}
+	}
+}
+
 func (memStore *MemStore) listenForMsg() {
-	for !memStore.stop {
-		msg := <-memStore.msgChan
-		memStore.store = append(memStore.store, msg)
+	for {
+		select {
+		case <-memStore.stop:
+			logging.Debug.Println("Stopped listening for messages")
+			return
+		case msg := <-memStore.msgChan:
+			memStore.store = append(memStore.store, msg)
+		}
 	}
 }
 
@@ -110,6 +144,10 @@ func (memStore *MemStore) GetLatest(number int) ([]*parsing.Message, error) {
 
 // Release Stops the Listen Loop for Messages and write the Storage back to the file
 func (memStore *MemStore) Release() error {
+	memStore.stop <- true
+
+	memStore.cleanUpTick.Stop()
+	close(memStore.stop)
 	file, err := os.Create(memStore.storeFile)
 	if err != nil {
 		return err
