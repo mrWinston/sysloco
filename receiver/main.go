@@ -34,11 +34,10 @@ func main() {
 	// init Cmdline Args
 	signal.Notify(osSig, syscall.SIGINT, syscall.SIGTERM)
 	go handleOsSignal()
+	logOpts := logging.DefaultOptions()
 	options, err := settings.Parse()
 	handleErr(err)
-
 	// init Logging
-	logOpts := logging.DefaultOptions()
 	logOpts.Level = options.LogLevel
 	logOpts.DebugPath = options.DebugPath
 	logOpts.InfoPath = options.InfoPath
@@ -59,7 +58,7 @@ func main() {
 		//logStore, err = storage.NewBadgerStore(storageOpts)
 		//handleErr(err)
 	} else {
-		logStore, err = storage.NewMemStore(options.DbLocation, 0, 0)
+		logStore, err = storage.NewMemStore(options.DbLocation, 100)
 		handleErr(err)
 	}
 
@@ -77,11 +76,9 @@ func main() {
 	handleErr(err)
 	err = syslogRestServer.Start()
 	defer syslogRestServer.Stop()
+	defer logStore.Release()
 
 	// Wait for Shutdown Signal
 	<-shutdown
-	logStore.Release()
-	syslogRestServer.Stop()
-	syslogServer.Stop()
 	logging.Info.Println("Shutting Down...")
 }

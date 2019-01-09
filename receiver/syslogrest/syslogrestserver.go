@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/mrWinston/sysloco/receiver/logging"
@@ -13,6 +14,38 @@ import (
 	"github.com/mrWinston/sysloco/receiver/syslogrest/handlers"
 )
 
+type rootHandler struct {
+	filterHandler *handlers.FilterHandler
+	latestHandler *handlers.LatestHandler
+}
+
+func newRootHandler(storage storage.LogStore) *rootHandler {
+	return &rootHandler{
+		filterHandler: handlers.NewFilterHandler(storage),
+		latestHandler: handlers.NewLatestHandler(storage),
+	}
+}
+
+func (rootHandler *rootHandler) ServeHTTP(res http.ResponseWriter, req *http.Request) {
+	logging.Error.Printf("Receiving Request for %s, Path is: %s", req.URL, req.URL.Path)
+	path := strings.Split(req.URL.Path, "/")[1:]
+	switch path[0] {
+	case "filter":
+		rootHandler.filterHandler.ServeHTTP(res, req)
+		return
+	case "latest":
+		rootHandler.latestHandler.ServeHTTP(res, req)
+	default:
+		http.Error(res, fmt.Sprintf("404 Not Found"), http.StatusNotFound)
+		logging.Error.Printf("Path not Found: %s", path[0])
+		return
+	}
+
+}
+
+// SyslogRestServer is an instance of the REST API for the Receiver. You can
+// use this Struct directly, but it is advised to use syslogrest.NewServer()
+// instead, as it provides input validation
 type SyslogRestServer struct {
 	port       int
 	address    string
@@ -36,7 +69,7 @@ func (syslogRestServer *SyslogRestServer) Start() error {
 	}
 
 	logging.Debug.Printf("Starting server with Addr: %s, Port: %d", syslogRestServer.address, syslogRestServer.port)
-	rootHandler := handlers.NewRootHandler(syslogRestServer.store)
+	rootHandler := newRootHandler(syslogRestServer.store)
 	httpServer := &http.Server{
 		Addr:         fmt.Sprintf("%s:%d", syslogRestServer.address, syslogRestServer.port),
 		Handler:      rootHandler,
