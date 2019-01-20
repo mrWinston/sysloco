@@ -90,6 +90,7 @@ func (memStore *MemStore) runOldMessageCleaner() {
 			logging.Debug.Println("Stopping Cleanup Routine")
 			return
 		case <-memStore.cleanUpTick.C:
+			logging.Debug.Println("run cleanup routine...")
 			memStore.clean()
 		}
 	}
@@ -99,6 +100,7 @@ func (memStore *MemStore) runOldMessageCleaner() {
 func (memStore *MemStore) clean() {
 	before_count := len(memStore.store)
 	if before_count <= memStore.maximumLines {
+		logging.Debug.Printf("have %d messages, no cleaning required", before_count)
 		return
 	}
 	f, err := os.OpenFile(memStore.storeFile, os.O_APPEND|os.O_WRONLY, 0600)
