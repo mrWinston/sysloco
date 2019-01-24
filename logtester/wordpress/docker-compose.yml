@@ -1,0 +1,38 @@
+version: "3.3"
+services:
+  db:
+    image: "mysql:5.7"
+    environment:
+      MYSQL_DATABASE: wordpress
+      MYSQL_PASSWORD: wordpress
+      MYSQL_ROOT_PASSWORD: somewordpress
+      MYSQL_USER: wordpress
+    restart: always
+    volumes:
+      - "db_data:/var/lib/mysql"
+    logging:
+      driver: syslog
+      options:
+        syslog-address: "udp://127.0.0.1:10001"
+        syslog-format: rfc5424
+        tag: wp_db
+  wordpress:
+    image: "wordpress:latest"
+    environment:
+      WORDPRESS_DB_HOST: "db:3306"
+      WORDPRESS_DB_PASSWORD: wordpress
+      WORDPRESS_DB_USER: wordpress
+    ports:
+      - "8000:80"
+    restart: always
+    depends_on:
+      - db
+    logging:
+      driver: syslog
+      options:
+        syslog-address: "udp://127.0.0.1:10001"
+        syslog-format: rfc5424
+        tag: wp_ui
+volumes:
+  db_data:
+

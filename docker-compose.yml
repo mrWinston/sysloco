@@ -13,14 +13,15 @@ services:
     build: ./receiver
     volumes:
       - "log_data:/db"
-    command: -db-loc /db/db.txt -v 1
+    command: -db-engine sqlite -db-loc /db/db.txt -v 2
     ports:
       - 80
       - "10001:10001/udp"
     labels:
       - "traefik.frontend.rule=PathPrefixStrip:/receiver"
       - "traefik.port=80"
-
+    volumes:
+      - "./db.txt:/db/db.txt"
   ui:
     build:
       context: ./ui

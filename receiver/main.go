@@ -8,6 +8,7 @@ import (
 	"github.com/mrWinston/sysloco/receiver/logging"
 	"github.com/mrWinston/sysloco/receiver/settings"
 	"github.com/mrWinston/sysloco/receiver/storage"
+	"github.com/mrWinston/sysloco/receiver/storage/sqlite"
 	"github.com/mrWinston/sysloco/receiver/syslog"
 	"github.com/mrWinston/sysloco/receiver/syslogrest"
 )
@@ -49,14 +50,9 @@ func main() {
 	logging.Debug.Println("\n", options)
 
 	var logStore storage.LogStore
-	if options.DbEngine == "badger" {
-		// Settings up Badger Storage
-		logging.Error.Fatal("Badger Store not implemented")
-		//storageOpts := storage.BadgerDefaultOptions()
-		//storageOpts.Dir = options.DbLocation
-		//storageOpts.ValueDir = options.DbLocation
-		//logStore, err = storage.NewBadgerStore(storageOpts)
-		//handleErr(err)
+	if options.DbEngine == "sqlite" {
+		logStore, err = sqlite.NewSqliteStore(options.DbLocation)
+		handleErr(err)
 	} else {
 		logStore, err = storage.NewMemStore(options.DbLocation, 100)
 		handleErr(err)

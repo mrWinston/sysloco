@@ -1,18 +1,16 @@
-FROM golang:1.11 AS build
-
-# Download and install the latest release of dep
-RUN curl -Lo /usr/bin/dep https://github.com/golang/dep/releases/download/v0.5.0/dep-linux-amd64 \
-  && chmod +x /usr/bin/dep
-#ADD https://github.com/golang/dep/releases/download/v0.4.1/dep-linux-amd64 /usr/bin/dep
-RUN chmod +x /usr/bin/dep
+FROM golang:1.11 AS dev
 
 # Copy the code from the host and compile it
-WORKDIR $GOPATH/src/github.com/mrWinston/sysloco/receiver
-COPY Gopkg.toml Gopkg.lock ./
-RUN dep ensure --vendor-only
+WORKDIR /receiver
+COPY go.mod go.sum ./
+RUN go mod download
 COPY . ./
-RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix nocgo -o /app .
+RUN GOOS=linux go build -a -o /app .
 
-FROM scratch
-COPY --from=build /app ./
-ENTRYPOINT ["./app"]
+ENTRYPOINT ["go", "run"]
+
+FROM golang:1.11.4-alpine3.8
+COPY --from=dev /app /app
+RUN apk --update upgrade && apk add sqlite
+RUN mkdir /lib64 && ln -s /lib/libc.musl-x86_64.so.1 /lib64/ld-linux-x86-64.so.2
+ENTRYPOINT ["/app"]

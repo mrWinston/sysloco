@@ -34,7 +34,12 @@ type Server struct {
 	TcpConnection *net.TCPConn
 	stopped       bool
 	DB            storage.LogStore
+	msgChan       chan ([]byte)
+	stop          chan bool
 }
+
+const BUFFER_SIZE = 1000
+const NUM_WORKERS = 10
 
 // New creates a new Server instance from the given Opts.  Create the Opts
 // beforehand with the DefaultOpts method.
@@ -58,11 +63,20 @@ func New(opts Opts) (*Server, error) {
 		return nil, err
 	}
 
-	return &Server{
+	server := &Server{
 		Opts:          opts,
 		stopped:       false,
 		UdpConnection: ServerCon,
-	}, nil
+		msgChan:       make(chan []byte, BUFFER_SIZE),
+		stop:          make(chan bool),
+	}
+
+	logging.Debug.Printf("Starting %d Workers for syslog intake...", NUM_WORKERS)
+	for i := 0; i < NUM_WORKERS; i++ {
+		go server.handleMessages()
+	}
+
+	return server, nil
 }
 
 func DefaultOpts() Opts {
@@ -83,18 +97,37 @@ func (s *Server) Start() {
 			logging.Info.Println("Got an Error while receiving message: ")
 			logging.Info.Println(err)
 		} else {
-			go s.handleMessage(buf[0:n])
+			logging.Info.Printf("got msg, waiting are: %v\n", len(s.msgChan))
+			s.msgChan <- buf[0:n]
+			//			go s.handleMessage(buf[0:n])
 		}
 	}
 }
+
 func (s *Server) Stop() {
 	s.stopped = true
 }
 
-func (s *Server) handleMessage(raw []byte) {
-	msg := parsing.GetMsg(string(raw))
-	err := s.DB.Store(*msg)
-	if err != nil {
-		logging.Error.Println("GOT AN ERROR:", err)
+func (s *Server) handleMessages() {
+	for {
+		select {
+		case <-s.stop:
+			logging.Debug.Println("Stop Listening for syslog msgs")
+			return
+		case raw := <-s.msgChan:
+			msg := parsing.GetMsg(string(raw))
+			err := s.DB.Store(*msg)
+			if err != nil {
+				logging.Error.Println("GOT AN ERROR:", err)
+			}
+		}
 	}
 }
+
+//func (s *Server) handleMessage(raw []byte) {
+//	msg := parsing.GetMsg(string(raw))
+//	err := s.DB.Store(*msg)
+//	if err != nil {
+//		logging.Error.Println("GOT AN ERROR:", err)
+//	}
+//}
