@@ -2,9 +2,10 @@ package sqlite
 
 import (
 	"database/sql"
+	"regexp"
 	"time"
 
-	_ "github.com/mattn/go-sqlite3"
+	"github.com/mattn/go-sqlite3"
 	"github.com/mrWinston/sysloco/receiver/logging"
 	"github.com/mrWinston/sysloco/receiver/parsing"
 )
@@ -21,8 +22,17 @@ const BUFFER_SIZE = 1000
 func NewSqliteStore(storeFile string) (*SqliteStore, error) {
 	logging.Info.Printf("Opening Sqlite DB at: %s\n", storeFile)
 
-	db, err := sql.Open("sqlite3", storeFile)
-
+	regex := func(re, s string) (bool, error) {
+		return regexp.MatchString(re, s)
+	}
+	sql.Register("sqlite3_with_go_func",
+		&sqlite3.SQLiteDriver{
+			ConnectHook: func(conn *sqlite3.SQLiteConn) error {
+				logging.Error.Printf("sqlite3 Connection Hook Called!\n")
+				return conn.RegisterFunc("regexp", regex, true)
+			},
+		})
+	db, err := sql.Open("sqlite3_with_go_func", storeFile)
 	if err != nil {
 		logging.Error.Printf("Error Opening Database file: %v", err)
 		return nil, err
@@ -35,6 +45,11 @@ func NewSqliteStore(storeFile string) (*SqliteStore, error) {
 		return nil, err
 	}
 
+	//_, err = db.Exec(statementStrings.loadRegexp)
+
+	//if err != nil {
+	//	logging.Error.Printf("Error Loading Regexp extension: %v\n", err)
+	//}
 	var store = &SqliteStore{
 		msgChan:   make(chan *parsing.Message, BUFFER_SIZE),
 		stop:      make(chan bool),
@@ -99,10 +114,26 @@ func (sqliteStore *SqliteStore) GetLatest(number int) ([]*parsing.Message, error
 		return nil, err
 	}
 
-	return get, nil
+	return getMessageFromRows(rows)
 }
-func (sqliteStore *SqliteStore) Filter(appRegex string, msgRegex string, num int) ([]*parsing.Message, error) {
-	return nil, nil
+func (sqliteStore *SqliteStore) Filter(appRegex string, msgRegex string, number int) ([]*parsing.Message, error) {
+	var rows *sql.Rows
+	var err error
+	if appRegex == "" && msgRegex != "" {
+		rows, err = sqliteStore.db.Query(statementStrings.getNLatestFilterMsg, msgRegex, number)
+	} else if appRegex != "" && msgRegex == "" {
+		rows, err = sqliteStore.db.Query(statementStrings.getNLatestFilterApp, appRegex, number)
+	} else if appRegex != "" && msgRegex != "" {
+		rows, err = sqliteStore.db.Query(statementStrings.getNLatestFiltered, appRegex, msgRegex, number)
+	} else {
+		return sqliteStore.GetLatest(number)
+	}
+
+	if err != nil {
+		logging.Error.Printf("Error while filtering for: app: \"%s\", msg:\"%s\", number: \"%d\"... Error was: %v", appRegex, msgRegex, number, err)
+		return nil, err
+	}
+	return getMessageFromRows(rows)
 }
 
 func (sqliteStore *SqliteStore) Release() error {

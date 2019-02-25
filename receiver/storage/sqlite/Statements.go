@@ -1,10 +1,12 @@
 package sqlite
 
 var statementStrings = struct {
-	createLogTable     string
-	insertLogEntry     string
-	getNLatest         string
-	getNLatestFiltered string
+	createLogTable      string
+	getNLatest          string
+	getNLatestFilterApp string
+	getNLatestFilterMsg string
+	getNLatestFiltered  string
+	insertLogEntry      string
 }{
 	createLogTable: `
 		CREATE TABLE IF NOT EXISTS logentries
@@ -40,11 +42,33 @@ var statementStrings = struct {
 			*
 		FROM
 			logentries
+		WHERE
+			appname REGEXP ? AND
+			msg REGEXP ?
 		ORDER BY
 			id DESC
+		LIMIT ?;
+	`,
+	getNLatestFilterApp: `
+		SELECT
+			*
+		FROM
+			logentries
 		WHERE
-			appname regexp ? AND
-			msg regexp ?
+			appname REGEXP ?
+		ORDER BY
+			id DESC
+		LIMIT ?;
+	`,
+	getNLatestFilterMsg: `
+		SELECT
+			*
+		FROM
+			logentries
+		WHERE
+			msg REGEXP ?
+		ORDER BY
+			id DESC
 		LIMIT ?;
 	`,
 }

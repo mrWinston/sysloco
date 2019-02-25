@@ -8,7 +8,7 @@ import (
 )
 
 func getMessageFromRows(rows *sql.Rows) ([]*parsing.Message, error) {
-	var res []*parsing.Message = make([]*parsing.Message, 10)
+	var res []*parsing.Message = make([]*parsing.Message, 0)
 
 	for rows.Next() {
 		var (

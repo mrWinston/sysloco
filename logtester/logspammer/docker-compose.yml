@@ -3,7 +3,7 @@ version: '3'
 services:
   testone:
     build: .
-    command: "0.05"
+    command: "0.1"
     logging:
       driver: syslog
       options:
@@ -12,10 +12,16 @@ services:
         tag: tester1
   testtwo:
     build: .
-    command: "0.05"
+    command: "0.1"
     logging:
       driver: syslog
       options:
         syslog-address: "udp://127.0.0.1:10001"
         syslog-format: rfc5424
         tag: tester2
+networks:
+  default:
+    ipam:
+      driver: default
+      config:
+        - subnet: 10.0.3.0/24
