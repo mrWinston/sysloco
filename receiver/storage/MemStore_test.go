@@ -74,7 +74,7 @@ func initMemStore(remove bool, t *testing.T) *MemStore {
 		os.Remove(memStoreFile)
 	}
 
-	memStore, err := NewMemStore(memStoreFile)
+	memStore, err := NewMemStore(memStoreFile, 0)
 	assert.Nil(t, err)
 
 	fileInfo, err := os.Stat(memStoreFile)
@@ -128,7 +128,7 @@ func TestFilter(t *testing.T) {
 		memStore.Store(*msgs[i])
 		time.Sleep(sleeptime)
 	}
-	res, err := memStore.Filter("my.3yd")
+	res, err := memStore.Filter("", "my.3yd", 50)
 	assert.Nil(t, err)
 	assert.Equal(t, 2, len(res))
 

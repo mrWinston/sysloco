@@ -10,23 +10,29 @@ services:
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock # So that Traefik can listen to the Docker events
   receiver:
-    build: ./receiver
+    build:
+      context: ./receiver
+      target: dev
+    image: sysloco-receiver
     volumes:
       - "log_data:/db"
-    command: -db-loc /db/db.txt -v 1
+      - "./receiver:/receiver"
+    command: -db-engine sqlite -db-loc /db/db.txt -v 2
     ports:
       - 80
       - "10001:10001/udp"
     labels:
       - "traefik.frontend.rule=PathPrefixStrip:/receiver"
       - "traefik.port=80"
-
+    volumes:
+      - "./db.txt:/db/db.txt"
   ui:
     build:
       context: ./ui
-      target: Prod
+      target: Dev
     #    environment:
     #      - NODE_ENV=production
+    image: sysloco-ui
     volumes:
       - ./ui/src:/app/src
       - ./ui/public:/app/public
@@ -39,3 +45,11 @@ services:
 
 volumes:
   log_data:
+
+networks:
+  default:
+    ipam:
+      driver: default
+      config:
+        - subnet: 10.0.1.0/24
+
