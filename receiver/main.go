@@ -32,9 +32,11 @@ func handleOsSignal() {
 }
 
 func main() {
-	// init Cmdline Args
+	// init Signal Handling
 	signal.Notify(osSig, syscall.SIGINT, syscall.SIGTERM)
 	go handleOsSignal()
+
+	// init Cmdline Args
 	logOpts := logging.DefaultOptions()
 	options, err := settings.Parse()
 	handleErr(err)

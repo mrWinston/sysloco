@@ -12,39 +12,53 @@ import (
 	"github.com/mrWinston/sysloco/receiver/storage"
 )
 
-var numPostKey = "num"
+const NUM_POST_KEY = "num"
+const MSG_POST_KEY = "msg"
+const APP_POST_KEY = "app"
 
-type LatestHandler struct {
+const DEFAULT_NUM_STRING = "500"
+
+type LogsHandler struct {
 	store storage.LogStore
 }
 
-func NewLatestHandler(storage storage.LogStore) *LatestHandler {
-	return &LatestHandler{
+func NewLogsHandler(storage storage.LogStore) *LogsHandler {
+	return &LogsHandler{
 		store: storage,
 	}
 }
 
-func (latestHandler *LatestHandler) ServeHTTP(res http.ResponseWriter, req *http.Request) {
+func (logsHandler *LogsHandler) ServeHTTP(res http.ResponseWriter, req *http.Request) {
 	start := time.Now()
-	numString := req.PostFormValue(numPostKey)
+	numRaw := req.PostFormValue(NUM_POST_KEY)
+	msgRaw := req.PostFormValue(MSG_POST_KEY)
+	appRaw := req.PostFormValue(APP_POST_KEY)
 
-	if numString == "" {
-		http.Error(res, fmt.Sprintf("\"%s\" parameter not provided!", numPostKey), http.StatusBadRequest)
-		return
+	if numRaw == "" {
+		logging.Info.Println("Got request without num, using 500 as default")
+		numRaw = DEFAULT_NUM_STRING
 	}
-	num, err := strconv.Atoi(numString)
+	num, err := strconv.Atoi(numRaw)
 
 	if err != nil {
 		http.Error(
 			res,
-			fmt.Sprintf("Error parsing %s into an Integer. Error is: %s", numString, err.Error()),
+			fmt.Sprintf("Error parsing %s into an Integer. Error is: %s", numRaw, err.Error()),
 			http.StatusBadRequest,
 		)
 		logging.Error.Printf("Error Handling Request: %s, Error was: %s", req, err.Error())
 		return
 	}
 
-	results, err := latestHandler.store.GetLatest(num)
+	var results []*parsing.Message
+	if msgRaw != "" || appRaw != "" {
+		logging.Debug.Printf("Returning %d entries that match: app: '%s', msg: '%s'", num, appRaw, msgRaw)
+		results, err = logsHandler.store.Filter(appRaw, msgRaw, num)
+	} else {
+		logging.Debug.Printf("Nothing to search for, returning %d last entries", num)
+		results, err = logsHandler.store.GetLatest(num)
+	}
+
 	if err != nil {
 		http.Error(
 			res,

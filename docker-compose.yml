@@ -10,10 +10,13 @@ services:
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock # So that Traefik can listen to the Docker events
   receiver:
-    build: ./receiver
+    build:
+      context: ./receiver
+      target: dev
     image: sysloco-receiver
     volumes:
       - "log_data:/db"
+      - "./receiver:/receiver"
     command: -db-engine sqlite -db-loc /db/db.txt -v 2
     ports:
       - 80
@@ -26,7 +29,7 @@ services:
   ui:
     build:
       context: ./ui
-      target: Prod
+      target: Dev
     #    environment:
     #      - NODE_ENV=production
     image: sysloco-ui

@@ -17,12 +17,14 @@ import (
 type rootHandler struct {
 	filterHandler *handlers.FilterHandler
 	latestHandler *handlers.LatestHandler
+	logsHandler   *handlers.LogsHandler
 }
 
 func newRootHandler(storage storage.LogStore) *rootHandler {
 	return &rootHandler{
 		filterHandler: handlers.NewFilterHandler(storage),
 		latestHandler: handlers.NewLatestHandler(storage),
+		logsHandler:   handlers.NewLogsHandler(storage),
 	}
 }
 
@@ -35,6 +37,10 @@ func (rootHandler *rootHandler) ServeHTTP(res http.ResponseWriter, req *http.Req
 		return
 	case "latest":
 		rootHandler.latestHandler.ServeHTTP(res, req)
+		return
+	case "logs":
+		rootHandler.logsHandler.ServeHTTP(res, req)
+		return
 	default:
 		http.Error(res, fmt.Sprintf("404 Not Found"), http.StatusNotFound)
 		logging.Error.Printf("Path not Found: %s", path[0])

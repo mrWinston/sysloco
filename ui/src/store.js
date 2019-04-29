@@ -56,17 +56,19 @@ export default new Vuex.Store({
       //        num: context.state.numLines,
       //      };
       console.log(data);
-      let url = '/receiver/latest';
-      if (context.state.filter.app !== '' || context.state.filter.msg !== '') {
-        url = '/receiver/filter';
-      }
+      let url = '/receiver/logs';
+      //      if (context.state.filter.app !== '' || context.state.filter.msg !== '') {
+      //        url = '/receiver/filter';
+      //      }
       console.log(url);
       const config = {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
       };
-      console.log(config);
+      console.log(context.state.numLines);
+      console.log(context.state.filter.msg);
+      console.log(context.state.filter.app);
       const response = await axios.post(url, data, config);
       console.log(response.data);
       context.commit('updateLog', response.data.Result);
