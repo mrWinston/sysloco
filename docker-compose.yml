@@ -12,7 +12,7 @@ services:
   receiver:
     build:
       context: ./receiver
-      target: dev
+      target: prod
     image: sysloco-receiver
     volumes:
       - "log_data:/db"
@@ -29,9 +29,7 @@ services:
   ui:
     build:
       context: ./ui
-      target: Dev
-    #    environment:
-    #      - NODE_ENV=production
+      target: dev
     image: sysloco-ui
     volumes:
       - ./ui/src:/app/src
@@ -40,7 +38,7 @@ services:
     ports:
       - 8080
     labels:
-      - "traefik.frontend.rule=PathPrefixStrip:/ui"
+      - "traefik.frontend.rule=PathPrefixStrip:/"
       - "traefik.frontend.passHostHeader=true"
 
 volumes:

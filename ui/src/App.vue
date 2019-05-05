@@ -1,16 +1,10 @@
 <template>
 
   <div class="content">
-    <!--
-    <div class="cell top-left">
-      <img src="./assets/logo-wide-opt.svg" alt="" class="logo">
-    </div>
-    <div class="cell top-right"></div>
-    -->
     <sl-header-bar class="top"></sl-header-bar>
-    <sl-filter-section class="cell bottom-left"></sl-filter-section>
+    <sl-filter-section class="bottom-left"></sl-filter-section>
 
-    <div id="logcontainer" class="cell bottom-right">
+    <div id="logcontainer" class="bottom-right">
       <sl-log-display></sl-log-display>
     </div>
   </div>

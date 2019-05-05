@@ -24,10 +24,10 @@
         Auto-Refresh
       </label>
     </div>
-    <div class="form-element" v-if="refresh">
+    <div class="form-element">
       <label for="input-refresh-interval">Refresh Interval (in ms)</label>
       <br/>
-      <input type="number" id="input-refresh-interval" v-model="refreshInterval">
+      <input type="number" id="input-refresh-interval" :disabled="!refresh" v-model="refreshInterval">
     </div>
 
     <div class="form-element">

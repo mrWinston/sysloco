@@ -11,8 +11,8 @@ ENTRYPOINT CompileDaemon -log-prefix=false -build="go build -a -o /app" -command
 
 # ENTRYPOINT ["go", "run"]
 
-FROM golang:1.12-alpine3.9
+FROM golang:1.12-alpine3.9 as prod
 RUN apk add sqlite pcre
 RUN mkdir /lib64 && ln -s /lib/libc.musl-x86_64.so.1 /lib64/ld-linux-x86-64.so.2
-COPY --from=dev /app /app 
+COPY --from=dev /app /app
 ENTRYPOINT ["/app"]
